@@ -11,26 +11,36 @@ import * as readline from "readline";
 const sleep = async (ms: number) =>
   new Promise(resolve => setTimeout(() => resolve(), ms));
 
+const tickRate = 500;
+
 interface State {
   field: Image;
   cPos: Coordinate;
   towers: Coordinate[];
+  mobs: Coordinate[];
 }
 
 const createState = (): State => ({
   field: createRect({ width: 24, height: 8, char: "." }),
   cPos: { x: 0, y: 0 },
-  towers: []
+  towers: [],
+  mobs: []
 });
 
-const state = createState();
+let state = createState();
 
 const cursor: Image = ["X"];
 
 const render = (state: State) => {
   const renderField = (state: State) => {
-    let output = state.towers.reduce(
-      (acc, towerPos) => compose(acc, ["T"], towerPos),
+    let output;
+
+    output = state.towers.reduce(
+      (acc, pos) => compose(acc, ["T"], pos),
+      state.field
+    );
+    output = state.mobs.reduce(
+      (acc, pos) => compose(acc, ["M"], pos),
       state.field
     );
     if (new Date().getTime() % 1000 > 500) {
@@ -84,14 +94,29 @@ process.stdin.on("keypress", (_, key) => {
       break;
     case "t":
       state.towers.push(state.cPos);
+      break;
+    case "m":
+      state.mobs.push(state.cPos);
+      break;
   }
 });
 
-const gameloop = async () => {
+const tick = (state: State) => {
+  return state;
+};
+
+const gameLoop = async () => {
+  while (true) {
+    state = tick(state);
+    await tickRate;
+  }
+};
+
+const renderLoop = async () => {
   while (true) {
     render(state);
     await sleep(16);
   }
 };
 
-gameloop();
+renderLoop();
