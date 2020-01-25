@@ -3,7 +3,8 @@ import {
   compose,
   Image,
   Coordinate,
-  isInBounds
+  isInBounds,
+  measure
 } from "monospace-rendering";
 import * as readline from "readline";
 
@@ -17,7 +18,7 @@ interface State {
 }
 
 const createState = (): State => ({
-  field: createRect({ width: 40, height: 10, char: "." }),
+  field: createRect({ width: 24, height: 8, char: "." }),
   cPos: { x: 0, y: 0 },
   towers: []
 });
@@ -27,12 +28,26 @@ const state = createState();
 const cursor: Image = ["X"];
 
 const render = (state: State) => {
-  let output = compose(state.field, cursor, state.cPos);
+  const renderField = (state: State) => {
+    let output = state.towers.reduce(
+      (acc, towerPos) => compose(acc, ["T"], towerPos),
+      state.field
+    );
+    if (new Date().getTime() % 1000 > 500) {
+      output = compose(output, cursor, state.cPos);
+    }
+    return output;
+  };
 
-  output = state.towers.reduce(
-    (acc, towerPos) => compose(acc, ["T"], towerPos),
-    output
-  );
+  const field = renderField(state);
+
+  const { width, height } = measure(field);
+  const background = createRect({
+    width: width + 4,
+    height: height + 2,
+    char: "\u2588"
+  });
+  let output = compose(background, field, { x: 2, y: 1 });
 
   process.stdout.write("\u001b[2J\u001b[0;0H");
   console.log(output.join("\n"));
@@ -67,7 +82,7 @@ process.stdin.on("keypress", (_, key) => {
     case "right":
       state.cPos = addInBounds(state.field, state.cPos, { x: 1, y: 0 });
       break;
-    case "f":
+    case "t":
       state.towers.push(state.cPos);
   }
 });
