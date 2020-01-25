@@ -13,11 +13,13 @@ const sleep = async (ms: number) =>
 interface State {
   field: Image;
   cPos: Coordinate;
+  towers: Coordinate[];
 }
 
-const createState = () => ({
+const createState = (): State => ({
   field: createRect({ width: 40, height: 10, char: "." }),
-  cPos: { x: 0, y: 0 }
+  cPos: { x: 0, y: 0 },
+  towers: []
 });
 
 const state = createState();
@@ -25,7 +27,13 @@ const state = createState();
 const cursor: Image = ["X"];
 
 const render = (state: State) => {
-  const output = compose(state.field, cursor, state.cPos);
+  let output = compose(state.field, cursor, state.cPos);
+
+  output = state.towers.reduce(
+    (acc, towerPos) => compose(acc, ["T"], towerPos),
+    output
+  );
+
   process.stdout.write("\u001b[2J\u001b[0;0H");
   console.log(output.join("\n"));
 };
@@ -42,7 +50,7 @@ const addInBounds = (img: Image, a: Coordinate, b: Coordinate) => {
   return isInBounds(img, newCoord) ? newCoord : a;
 };
 
-process.stdin.on("keypress", (str, key) => {
+process.stdin.on("keypress", (_, key) => {
   if (key.sequence === "\u0003") {
     process.exit();
   }
@@ -59,6 +67,8 @@ process.stdin.on("keypress", (str, key) => {
     case "right":
       state.cPos = addInBounds(state.field, state.cPos, { x: 1, y: 0 });
       break;
+    case "f":
+      state.towers.push(state.cPos);
   }
 });
 
