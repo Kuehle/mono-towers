@@ -11,21 +11,30 @@ import * as readline from "readline";
 const sleep = async (ms: number) =>
   new Promise(resolve => setTimeout(() => resolve(), ms));
 
-const tickRate = 500;
-
 interface State {
+  tick: { rate: number; nr: number };
   field: Image;
   cPos: Coordinate;
   towers: Coordinate[];
   mobs: Coordinate[];
+  player: Coordinate;
 }
 
-const createState = (): State => ({
-  field: createRect({ width: 24, height: 8, char: "." }),
-  cPos: { x: 0, y: 0 },
-  towers: [],
-  mobs: []
-});
+const createState = (): State => {
+  const field = createRect({ width: 24, height: 8, char: "." });
+  const { width, height } = measure(field);
+  return {
+    field,
+    cPos: { x: 0, y: 0 },
+    towers: [],
+    mobs: [],
+    tick: {
+      rate: 500,
+      nr: 0
+    },
+    player: { x: width - 1, y: Math.floor(height / 2) }
+  };
+};
 
 let state = createState();
 
@@ -33,16 +42,13 @@ const cursor: Image = ["X"];
 
 const render = (state: State) => {
   const renderField = (state: State) => {
-    let output;
+    let output = state.field;
 
     output = state.towers.reduce(
       (acc, pos) => compose(acc, ["T"], pos),
-      state.field
+      output
     );
-    output = state.mobs.reduce(
-      (acc, pos) => compose(acc, ["M"], pos),
-      state.field
-    );
+    output = state.mobs.reduce((acc, pos) => compose(acc, ["M"], pos), output);
     if (new Date().getTime() % 1000 > 500) {
       output = compose(output, cursor, state.cPos);
     }
@@ -98,17 +104,26 @@ process.stdin.on("keypress", (_, key) => {
     case "m":
       state.mobs.push(state.cPos);
       break;
+    case "p":
+      state.player = state.cPos;
+      break;
   }
 });
 
 const tick = (state: State) => {
+  const moveMobs = (mobs: Coordinate[]) => {
+    return mobs.map(({ x, y }) => ({ x: x + 1, y }));
+  };
+  state.mobs = moveMobs(state.mobs);
+
+  state.tick.nr++;
   return state;
 };
 
 const gameLoop = async () => {
   while (true) {
     state = tick(state);
-    await tickRate;
+    await sleep(state.tick.rate);
   }
 };
 
@@ -120,3 +135,4 @@ const renderLoop = async () => {
 };
 
 renderLoop();
+gameLoop();
