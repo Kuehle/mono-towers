@@ -48,6 +48,7 @@ const render = (state: State) => {
       (acc, pos) => compose(acc, ["T"], pos),
       output
     );
+    output = compose(output, ["@"], state.player);
     output = state.mobs.reduce((acc, pos) => compose(acc, ["M"], pos), output);
     if (new Date().getTime() % 1000 > 500) {
       output = compose(output, cursor, state.cPos);
