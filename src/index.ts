@@ -18,6 +18,7 @@ interface State {
   towers: Coordinate[];
   mobs: Coordinate[];
   player: Coordinate;
+  goto: Coordinate | null;
 }
 
 const createState = (): State => {
@@ -32,7 +33,8 @@ const createState = (): State => {
       rate: 500,
       nr: 0
     },
-    player: { x: width - 1, y: Math.floor(height / 2) }
+    player: { x: width - 1, y: Math.floor(height / 2) },
+    goto: null
   };
 };
 
@@ -108,6 +110,9 @@ process.stdin.on("keypress", (_, key) => {
     case "p":
       state.player = state.cPos;
       break;
+    case "g":
+      state.goto = state.cPos;
+      break;
   }
 });
 
@@ -115,7 +120,25 @@ const tick = (state: State) => {
   const moveMobs = (mobs: Coordinate[]) => {
     return mobs.map(({ x, y }) => ({ x: x + 1, y }));
   };
+  const movePlayer = (player: Coordinate, goto: Coordinate) => {
+    // find delta
+    // go to direction that is further away
+    if (player.x === goto.x && player.x === goto.x) return player;
+
+    const delta = { x: goto.x - player.x, y: goto.y - player.x };
+
+    const step =
+      Math.abs(delta.x) > Math.abs(delta.y)
+        ? { x: delta.x / Math.abs(delta.x || 1), y: 0 }
+        : { y: delta.y / Math.abs(delta.y || 1), x: 0 };
+
+    const newPlayerposition = { x: player.x + step.x, y: player.y + step.y };
+    return newPlayerposition;
+  };
   state.mobs = moveMobs(state.mobs);
+  state.player = state.goto
+    ? movePlayer(state.player, state.goto)
+    : state.player;
 
   state.tick.nr++;
   return state;
